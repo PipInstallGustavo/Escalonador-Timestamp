@@ -6,13 +6,15 @@ using System.Linq;
 class Parser
 {   
     // elementos do in.txt
-    private List<string> obj_dados = new List<string>();
-    private List<string> transacoes = new List<string>();
-    private Dictionary<string, string> timestamps = new Dictionary<string, string>();
-    private List<Tuple<string, string>> escalonamentos = new List<Tuple<string, string>>();
+    public List<string> obj_dados = new List<string>();
+    public List<string> transacoes = new List<string>();
+    public Dictionary<string, string> timestamps = new Dictionary<string, string>();
+    public List<Tuple<string, string>> escalonamentos = new List<Tuple<string, string>>();
 
     private List<string> timestamps_values = new List<string>();
     private string in_path = "in.txt";
+
+    public Parser () {}
 
     public Parser(List<string> obj_dados, List<string> transacoes, Dictionary<string, string> timestamps, List<Tuple<string, string>> escalonamentos)
     {
