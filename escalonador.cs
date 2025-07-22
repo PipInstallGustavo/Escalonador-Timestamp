@@ -50,6 +50,16 @@ public class Escalonador
         Console.WriteLine();
     }
 
+    // Método para printar o estado final da estrutura após um escalonamento
+    private void PrintEstruturaTSFinal(string nomeEscalonamento)
+    {
+        Console.WriteLine($"--- Estado Final após {nomeEscalonamento} ---");
+        foreach (var kvp in estruturaTS)
+            Console.WriteLine($"<{kvp.Key}, {kvp.Value.TSRead}, {kvp.Value.TSWrite}>");
+        Console.WriteLine("-------------------------------------------\n");
+    }
+
+
     // Método para registrar a operação num arquivo do dado
     private void RegistrarOperacaoNoArquivo(string dado, string escalonamento, string operacao, int momento)
     {
@@ -85,7 +95,7 @@ public class Escalonador
 
             bool rollback = false;
             // Zera o contador de momento para este escalonamento
-            int momento = 0;
+            // int momento = 0;
 
             for (int i = 0; i < ops.Length; i++)
             {
@@ -94,7 +104,7 @@ public class Escalonador
 
 
                 // Usa pós-incremento para que a primeira operação receba currentMomento == 0
-                int currentMomento = momento++;
+                momento++;
                 // Ignora commits ('c') 
                 if (tipo == 'c' || tipo == 'a')
     
@@ -118,15 +128,15 @@ public class Escalonador
                     {
                         resultados.Add($"{nome}-ROLLBACK-{i}");
                         rollback = true;
-                        RegistrarOperacaoNoArquivo(dado, nome, "READ", currentMomento);
+                        RegistrarOperacaoNoArquivo(dado, nome, "READ", momento);
                         break;
                     }
 
                     // Logging / Debug
-                    res.Add($"{dado}, {nome}, READ, {currentMomento}");
+                    res.Add($"{dado}, {nome}, READ, {momento}");
                     AtualizarTSRead(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, nome, "READ", currentMomento);
-                    PrintEstruturaTSIntermediario(nome, currentMomento);
+                    RegistrarOperacaoNoArquivo(dado, nome, "READ", momento);
+                    PrintEstruturaTSIntermediario(nome, momento);
                 }
                 else if (tipo == 'w')
                 {
@@ -137,20 +147,21 @@ public class Escalonador
                     {
                         resultados.Add($"{nome}-ROLLBACK-{i}");
                         rollback = true;
-                        RegistrarOperacaoNoArquivo(dado, nome, "WRITE", currentMomento);
+                        RegistrarOperacaoNoArquivo(dado, nome, "WRITE", momento);
                         break;
                     }
 
                     // Logging / Debug
-                    res.Add($"{dado}, {nome}, WRITE, {currentMomento}");
+                    res.Add($"{dado}, {nome}, WRITE, {momento}");
                     AtualizarTSWrite(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, nome, "WRITE", currentMomento);
-                    PrintEstruturaTSIntermediario(nome, currentMomento);
+                    RegistrarOperacaoNoArquivo(dado, nome, "WRITE", momento);
+                    PrintEstruturaTSIntermediario(nome, momento);
                 }
             }
 
             if (!rollback)
                 resultados.Add($"{nome}-OK");
+                PrintEstruturaTSFinal(nome);
         }
 
         Console.WriteLine("res: " + string.Join(", ", res));
