@@ -70,7 +70,7 @@ public class Escalonador
             string nome = esc.Item1;
             var ops = esc.Item2.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Identifica dados
+            // Identifica todos os dados envolvidos neste escalonamento
             var dados = new HashSet<string>();
             foreach (var op in ops)
             {
@@ -80,52 +80,72 @@ public class Escalonador
                     dados.Add(op.Substring(p1 + 1, p2 - p1 - 1));
             }
 
-            // Inicializa a estrutura <ID, TS-Read, TS-Write>
+            // Inicializa a estrutura <ID, TS-Read, TS-Write> para cada dado
             InicializarEstruturaTS(dados);
 
             bool rollback = false;
+            // Zera o contador de momento para este escalonamento
+            int momento = 0;
+
             for (int i = 0; i < ops.Length; i++)
             {
                 var op = ops[i];
                 char tipo = op[0];
 
-                if (tipo == 'c' || tipo == 'a') continue;
 
-                momento++;
-                // Determina chave da transação em minúsculas, ex: 't1'
+                // Usa pós-incremento para que a primeira operação receba currentMomento == 0
+                int currentMomento = momento++;
+                // Ignora commits ('c') 
+                if (tipo == 'c' || tipo == 'a')
+    
+                    continue;
+
+                // Transação ex: 't1'
                 string idRaw = op.Length > 1 ? op[1].ToString() : string.Empty;
                 string transacao = "t" + idRaw;
 
+                // Dado acessado ex: 'x'
                 int p1 = op.IndexOf('(');
                 int p2 = op.IndexOf(')');
-                string dado = (p1 >= 0 && p2 > p1) ? op.Substring(p1 + 1, p2 - p1 - 1) : string.Empty;
+                string dado = (p1 >= 0 && p2 > p1)
+                    ? op.Substring(p1 + 1, p2 - p1 - 1)
+                    : string.Empty;
 
-                // Valida leitura
                 if (tipo == 'r')
                 {
+                    // Valida leitura contra último TS-Write
                     if (!TS.ContainsKey(transacao) || TS[transacao] < GetTSWrite(dado))
                     {
-                        resultados.Add($"{nome}-ROLLBACK-{i}"); rollback = true; break;
+                        resultados.Add($"{nome}-ROLLBACK-{i}");
+                        rollback = true;
+                        RegistrarOperacaoNoArquivo(dado, nome, "READ", currentMomento);
+                        break;
                     }
-                    // debug
-                    res.Add(dado + ", " + nome + ", READ, " + momento);
 
+                    // Logging / Debug
+                    res.Add($"{dado}, {nome}, READ, {currentMomento}");
                     AtualizarTSRead(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, nome, "READ", momento);
-                    PrintEstruturaTSIntermediario(nome, momento); // log após leitura
+                    RegistrarOperacaoNoArquivo(dado, nome, "READ", currentMomento);
+                    PrintEstruturaTSIntermediario(nome, currentMomento);
                 }
-                // Valida escrita
                 else if (tipo == 'w')
                 {
-                    if (!TS.ContainsKey(transacao) || TS[transacao] < GetTSRead(dado) || TS[transacao] < GetTSWrite(dado))
+                    // Valida escrita contra TS-Read e TS-Write
+                    if (!TS.ContainsKey(transacao)
+                        || TS[transacao] < GetTSRead(dado)
+                        || TS[transacao] < GetTSWrite(dado))
                     {
-                        resultados.Add($"{nome}-ROLLBACK-{i}"); rollback = true; break;
+                        resultados.Add($"{nome}-ROLLBACK-{i}");
+                        rollback = true;
+                        RegistrarOperacaoNoArquivo(dado, nome, "WRITE", currentMomento);
+                        break;
                     }
-                    //debug
-                    res.Add(dado + ", " + nome + ", WRITE, " + momento);
+
+                    // Logging / Debug
+                    res.Add($"{dado}, {nome}, WRITE, {currentMomento}");
                     AtualizarTSWrite(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, nome, "WRITE", momento);
-                    PrintEstruturaTSIntermediario(nome, momento); // log após escrita
+                    RegistrarOperacaoNoArquivo(dado, nome, "WRITE", currentMomento);
+                    PrintEstruturaTSIntermediario(nome, currentMomento);
                 }
             }
 
