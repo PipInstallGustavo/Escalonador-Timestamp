@@ -55,7 +55,7 @@ class Parser
         }
 
         //processar os escalonamentos
-        for (int i = 3; i < 6; i++){
+        for (int i = 3; i < lines.Count; i++){
             var partes = lines[i].Split('-');
             string id_escalonamento = partes[0].Trim();
             string operacoes = partes[1].Trim();
@@ -82,8 +82,4 @@ class Parser
         }
     }
 
-    // função que escreve os logs
-    public void escreve_logs(string id_esc, string operacao, int momento){
-
-    }
 }
