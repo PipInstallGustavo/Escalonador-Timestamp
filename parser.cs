@@ -12,7 +12,7 @@ class Parser
     public List<Tuple<string, string>> escalonamentos = new List<Tuple<string, string>>();
 
     private List<string> timestamps_values = new List<string>();
-    private string in_path = "in.txt";
+    private string in_path = "in6.txt";
 
     public Parser () {}
 

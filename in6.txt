@@ -1,0 +1,7 @@
+X,Y
+t1,t2
+5,10
+E_1-r2(X) r1(Y) c2 w1(Y) w2(X)
+E_2-r2(X) r1(Y) w1(X)
+E_3-r2(X) c2 r2(X) w1(X) w2(Y) r1(Y)
+E_4-r2(Y) r1(X) c1 w2(X) w1(Y)
