@@ -70,13 +70,15 @@ public class Escalonador
 
     public List<string> Executar()
     {
+        // Lista para armazenar os resultados que serão gravados no out.txt
         var resultados = new List<string>();
-        // Normaliza chaves de timestamp para minúsculas e converte valores
+        // Normaliza chaves de timestamp para minúsculas e converte valores se preciso
         var TS = timestamps
             .ToDictionary(kv => kv.Key.ToLower(), kv => int.Parse(kv.Value));
 
         foreach (var esc in escalonamentos)
         {
+            // Extrai o nome do escalonamento e as operações
             string nome = esc.Item1;
             var ops = esc.Item2.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -94,29 +96,16 @@ public class Escalonador
             InicializarEstruturaTS(dados);
 
             bool rollback = false;
-            var endedTransactions = new HashSet<string>(); // transações que já foram COMMIT
-            int momento = 0; // Zera o contador de momento para este escalonamento
 
-            for (int i = 0; i < ops.Length; i++)
+            for (int momento = 0; momento < ops.Length; momento++)
             {
-                var op = ops[i];
+                var op = ops[momento];
                 char tipo = op[0];
-                momento++; // pós-incremento
 
                 // Identifica transação e dado
                 string idRaw = op.Length > 1 && char.IsDigit(op[1]) ? op[1].ToString() : string.Empty;
                 string transacao = !string.IsNullOrEmpty(idRaw) ? "t" + idRaw : string.Empty;
 
-                
-
-            
-
-                // Se a transação já encerrou (commit ou abort), pular
-                if (!string.IsNullOrEmpty(transacao) && endedTransactions.Contains(transacao))
-                {
-                    // ignora operações de tX após commit/abort
-                    continue;
-                }
 
                 // Extrai dado acessado
                 int d1 = op.IndexOf('(');
@@ -125,34 +114,42 @@ public class Escalonador
                 // COMMIT
                 if (tipo == 'c')
                 {
-                    RegistrarOperacaoNoArquivo(dado, transacao, "COMMIT", momento);
-                    endedTransactions.Add(transacao);
-                    continue; // continua processamento do escalonamento, mas ignora tX daqui pra frente
+                    // Reniciliaza a estrutura de TS de todos os objetos de dado
+                    // Timestamp Read e Timestamp Write são zerados
+                    foreach (var dadoKey in dados)
+                    {
+                        estruturaTS[dadoKey] = (0, 0);
+                    }
                 }
                 if (tipo == 'r')
                 {
+                    // Se a transação não existe ou o timestamp da transação é menor que o timestamp de escrita do dado, faz rollback
                     if (!TS.ContainsKey(transacao) || TS[transacao] < GetTSWrite(dado))
                     {
-                        resultados.Add($"{nome}-ROLLBACK-{i}");
+                        resultados.Add($"{nome}-ROLLBACK-{momento}");
                         rollback = true;
-                        RegistrarOperacaoNoArquivo(dado, transacao, "READ", momento);
+                        RegistrarOperacaoNoArquivo(dado, nome, "READ", momento);
                         break;
                     }
+                    // Atualiza o timestamp de leitura do dado
                     AtualizarTSRead(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, transacao, "READ", momento);
+                    RegistrarOperacaoNoArquivo(dado, nome, "READ", momento);
                     PrintEstruturaTSIntermediario(nome, momento);
                 }
+                
                 else if (tipo == 'w')
                 {
+                    // Se a transação não existe ou o timestamp da transação é menor que o timestamp de leitura ou escrita do dado, faz rollback
                     if (!TS.ContainsKey(transacao) || TS[transacao] < GetTSRead(dado) || TS[transacao] < GetTSWrite(dado))
                     {
-                        resultados.Add($"{nome}-ROLLBACK-{i}");
+                        resultados.Add($"{nome}-ROLLBACK-{momento}");
                         rollback = true;
-                        RegistrarOperacaoNoArquivo(dado, transacao, "WRITE", momento);
+                        RegistrarOperacaoNoArquivo(dado, nome, "WRITE", momento);
                         break;
                     }
+                    // Atualiza o timestamp de escrita do dado
                     AtualizarTSWrite(dado, TS[transacao]);
-                    RegistrarOperacaoNoArquivo(dado, transacao, "WRITE", momento);
+                    RegistrarOperacaoNoArquivo(dado, nome, "WRITE", momento);
                     PrintEstruturaTSIntermediario(nome, momento);
                 }
             }

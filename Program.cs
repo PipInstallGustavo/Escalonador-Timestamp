@@ -9,9 +9,6 @@ class Program
         // Cria o parser e processa o arquivo
         var parser = new Parser();
         parser.processar_transacoes_arquivo();
-        
-        Console.WriteLine("Prints a seguir são do Program.cs");
-        //printa as as variaveis
 
         Console.WriteLine("Objetos de Dados:");
         foreach (var obj in parser.obj_dados)
@@ -37,7 +34,7 @@ class Program
             Console.WriteLine($" - {esc.Item1}: {esc.Item2}");
         }
 
-        // A partir de timestamps e escalonamentos, vamos chamar o algoritmo Timestamp-Based Scheduling
+        // A partir de timestamps e escalonamentos, vamos executar o algoritmo Timestamp-Based Scheduling
         var escalonador = new Escalonador(parser.timestamps, parser.escalonamentos);
         var resultado = escalonador.Executar();
         

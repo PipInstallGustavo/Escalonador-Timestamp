@@ -12,7 +12,7 @@ class Parser
     public List<Tuple<string, string>> escalonamentos = new List<Tuple<string, string>>();
 
     private List<string> timestamps_values = new List<string>();
-    private string in_path = "in6.txt";
+    private string in_path = "infinal.txt";
 
     public Parser () {}
 
@@ -60,18 +60,11 @@ class Parser
             string id_escalonamento = partes[0].Trim();
             string operacoes = partes[1].Trim();
 
-            Console.WriteLine($"ID: {id_escalonamento}");
-            Console.WriteLine($"Operações: {operacoes}");
-
             escalonamentos.Add(Tuple.Create(id_escalonamento, operacoes)); //lista de tuplas com o id do escalonamento e as operações de cada um
         }
     }
 
     //função responsável por criar e escrever o out.txt
-    //resultados é uma lista de strings do formato:
-        // E_1-ROLLBACK-3
-        // E_2-ROLLBACK-2
-        // E_3-OK
     public void escreve_out(List<string> resultados, string outputFilename = "out.txt"){
         using (StreamWriter file = new StreamWriter(outputFilename))
         {
